@@ -51,6 +51,7 @@ import org.hisp.dhis.android.core.category.CategoryOptionCombo;
 import org.hisp.dhis.android.core.common.BaseIdentifiableObject;
 import org.hisp.dhis.android.core.common.FeatureType;
 import org.hisp.dhis.android.core.common.Geometry;
+import org.hisp.dhis.android.core.common.Unit;
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus;
 import org.hisp.dhis.android.core.program.Program;
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityType;
@@ -72,6 +73,8 @@ import io.reactivex.subjects.PublishSubject;
 import timber.log.Timber;
 
 import static android.text.TextUtils.isEmpty;
+import static org.dhis2.utils.analytics.AnalyticsConstants.CLICK;
+import static org.dhis2.utils.analytics.AnalyticsConstants.DELETE_AND_BACK;
 
 
 public class FormFragment extends FragmentGlobalAbstract implements FormView, CoordinatesView.OnMapPositionClick, CoordinatesView.OnCurrentLocationClick {
@@ -94,6 +97,8 @@ public class FormFragment extends FragmentGlobalAbstract implements FormView, Co
     private PublishSubject<String> onIncidentDateChanged;
     private PublishSubject<Geometry> onCoordinatesChanged;
     private PublishSubject<Geometry> onTeiCoordinatesChanged;
+    private PublishSubject<Unit> onCoordinatesCleared;
+
     private TextInputLayout reportDateLayout;
     private TextInputEditText reportDate;
     private PublishSubject<ReportStatus> undoObservable;
@@ -277,6 +282,12 @@ public class FormFragment extends FragmentGlobalAbstract implements FormView, Co
     public Observable<Geometry> teiCoordinatesChanged() {
         onTeiCoordinatesChanged = PublishSubject.create();
         return onTeiCoordinatesChanged;
+    }
+    @NonNull
+    @Override
+    public Observable<Unit> reportCoordinatesCleared(){
+        onCoordinatesCleared = PublishSubject.create();
+        return onCoordinatesCleared;
     }
 
     @NonNull
@@ -774,6 +785,7 @@ public class FormFragment extends FragmentGlobalAbstract implements FormView, Co
     }
 
     private void deleteAllSavedDataAndGoBack() {
+        analyticsHelper().setEvent(DELETE_AND_BACK, CLICK, DELETE_AND_BACK);
         formPresenter.deleteCascade();
     }
 

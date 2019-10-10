@@ -1,7 +1,6 @@
 package org.dhis2.usescases.eventsWithoutRegistration.eventInitial;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -14,24 +13,20 @@ import androidx.core.app.ActivityCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.unnamed.b.atv.model.TreeNode;
 
 import org.dhis2.R;
 import org.dhis2.data.forms.dataentry.fields.FieldViewModel;
 import org.dhis2.data.forms.dataentry.fields.edittext.EditTextViewModel;
 import org.dhis2.data.schedulers.SchedulerProvider;
-import org.dhis2.data.tuples.Pair;
 import org.dhis2.data.tuples.Sextet;
 import org.dhis2.data.tuples.Trio;
-import org.dhis2.usescases.eventsWithoutRegistration.eventSummary.EventSummaryActivity;
 import org.dhis2.usescases.eventsWithoutRegistration.eventSummary.EventSummaryRepository;
-import org.dhis2.usescases.map.MapSelectorActivity;
-import org.dhis2.utils.Constants;
+import org.dhis2.utils.DateUtils;
+import org.dhis2.utils.EventCreationType;
 import org.dhis2.utils.Result;
 import org.hisp.dhis.android.core.category.CategoryCombo;
 import org.hisp.dhis.android.core.category.CategoryOption;
 import org.hisp.dhis.android.core.category.CategoryOptionCombo;
-import org.hisp.dhis.android.core.common.FeatureType;
 import org.hisp.dhis.android.core.common.Geometry;
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit;
 import org.hisp.dhis.android.core.program.Program;
@@ -47,18 +42,18 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.processors.FlowableProcessor;
-import io.reactivex.processors.PublishProcessor;
 import io.reactivex.schedulers.Schedulers;
 import rx.exceptions.OnErrorNotImplementedException;
 import timber.log.Timber;
+
+import static org.dhis2.utils.analytics.AnalyticsConstants.BACK_EVENT;
+import static org.dhis2.utils.analytics.AnalyticsConstants.CLICK;
+import static org.dhis2.utils.analytics.AnalyticsConstants.CREATE_EVENT;
 
 /**
  * QUADRAM. Created by Cristian on 01/03/2018.
@@ -79,6 +74,7 @@ public class EventInitialPresenter implements EventInitialContract.Presenter {
     private CategoryCombo catCombo;
     private String programStageId;
     private List<OrganisationUnit> orgUnits;
+    private String programId;
 
 
     public EventInitialPresenter(@NonNull EventSummaryRepository eventSummaryRepository,
@@ -94,6 +90,7 @@ public class EventInitialPresenter implements EventInitialContract.Presenter {
     public void init(EventInitialContract.View mview, String programId, String eventId, String orgInitId, String programStageId) {
         this.view = mview;
         this.eventId = eventId;
+        this.programId = programId;
         this.programStageId = programStageId;
 
         compositeDisposable = new CompositeDisposable();
@@ -244,6 +241,8 @@ public class EventInitialPresenter implements EventInitialContract.Presenter {
 
     @Override
     public void onBackClick() {
+        if (eventId != null)
+            view.analyticsHelper().setEvent(BACK_EVENT, CLICK, CREATE_EVENT);
         view.back();
     }
 
@@ -361,16 +360,6 @@ public class EventInitialPresenter implements EventInitialContract.Presenter {
     }
 
     @Override
-    public void goToSummary() {
-        Bundle bundle = new Bundle();
-        bundle.putString("event_id", eventId);
-        if (program != null) {
-            bundle.putString("program_id", program.uid());
-        }
-        view.startActivity(EventSummaryActivity.class, bundle, false, false, null);
-    }
-
-    @Override
     public void getSectionCompletion(@Nullable String sectionUid) {
         Flowable<List<FieldViewModel>> fieldsFlowable = eventSummaryRepository.list(sectionUid, eventId);
         Flowable<Result<RuleEffect>> ruleEffectFlowable = eventSummaryRepository.calculate().subscribeOn(schedulerProvider.computation())
@@ -467,5 +456,21 @@ public class EventInitialPresenter implements EventInitialContract.Presenter {
                                 Timber::e
                         )
         );
+    }
+
+    @Override
+    public void initOrgunit(Date selectedDate) {
+        compositeDisposable.add(eventInitialRepository.filteredOrgUnits(DateUtils.databaseDateFormat().format(selectedDate), programId, null)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        orgUnits -> {
+                            if (orgUnits.size() == 1 && (view.eventcreateionType() == EventCreationType.ADDNEW || view.eventcreateionType() == EventCreationType.DEFAULT))
+                                view.setInitialOrgUnit(orgUnits.get(0));
+                            else
+                                view.setInitialOrgUnit(null);
+                        },
+                        throwable -> view.renderError(throwable.getMessage())
+                ));
     }
 }

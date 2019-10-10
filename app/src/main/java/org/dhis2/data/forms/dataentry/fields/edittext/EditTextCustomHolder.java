@@ -57,11 +57,15 @@ final class EditTextCustomHolder extends FormViewHolder {
         this.currentUid = currentSelection;
 
         binding.customEdittext.setFocusChangedListener((v, hasFocus) -> {
-            if (hasFocus) {
+           /* if (hasFocus) {
                 openKeyboard(binding.customEdittext.getEditText());
                 setSelectedBackground(isSearchMode);
             } else
-                clearBackground(isSearchMode);
+                clearBackground(isSearchMode);*/
+           if(!hasFocus){
+               clearBackground(isSearchMode);
+               binding.customEdittext.getEditText().setFocusable(false);
+           }
 
             if (isSearchMode || (!hasFocus && editTextModel != null && editTextModel.editable() && valueHasChanged())) {
                 sendAction();
@@ -69,16 +73,21 @@ final class EditTextCustomHolder extends FormViewHolder {
             validateRegex();
         });
         binding.customEdittext.setOnEditorActionListener((v, actionId, event) -> {
-            binding.customEdittext.getEditText().clearFocus();
-            closeKeyboard(binding.customEdittext.getEditText());
-            validateRegex();
+            sendAction();
             return true;
         });
 
+        binding.customEdittext.setActivationListener(() -> {
+            setSelectedBackground(isSearchMode);
+            binding.customEdittext.getEditText().setFocusable(true);
+            binding.customEdittext.getEditText().setFocusableInTouchMode(true);
+            binding.customEdittext.getEditText().requestFocus();
+            openKeyboard(binding.customEdittext.getEditText());
+        });
     }
 
     private void sendAction() {
-        if (!isEmpty(binding.customEdittext.getEditText().getText()) && editTextModel.error() == null) {
+        if (!isEmpty(binding.customEdittext.getEditText().getText())) {
             checkAutocompleteRendering();
             editTextModel.withValue(binding.customEdittext.getEditText().getText().toString());
             String value = ValidationUtils.validate(editTextModel.valueType(), binding.customEdittext.getEditText().getText().toString());
@@ -89,6 +98,8 @@ final class EditTextCustomHolder extends FormViewHolder {
         }
 
         clearBackground(isSearchMode);
+        closeKeyboard(binding.customEdittext.getEditText());
+
     }
 
     public void update(@NonNull FieldViewModel model) {
@@ -143,7 +154,7 @@ final class EditTextCustomHolder extends FormViewHolder {
                     !binding.customEdittext.getEditText().getText().toString().matches(editTextModel.fieldMask()))
                 binding.customEdittext.setWarning(binding.getRoot().getContext().getString(R.string.wrong_pattern), "");
             else
-                binding.customEdittext.setWarning("", "");
+                binding.customEdittext.setWarning(editTextModel.warning(), editTextModel.error());
     }
 
     @NonNull

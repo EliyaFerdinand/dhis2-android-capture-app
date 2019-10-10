@@ -59,6 +59,12 @@ public class SyncDataWorker extends Worker {
         boolean isEventOk = true;
         boolean isTeiOk = true;
         boolean isDataValue = true;
+
+        try {
+            presenter.uploadResources();
+        }catch (Exception e){
+            Timber.e(e);
+        }
         try {
             presenter.syncAndDownloadEvents(getApplicationContext());
         } catch (Exception e) {
@@ -79,6 +85,12 @@ public class SyncDataWorker extends Worker {
             isDataValue = false;
         }
 
+        try {
+            presenter.downloadResources();
+        } catch (Exception e) {
+            Timber.e(e);
+        }
+
         String lastDataSyncDate = DateUtils.dateTimeFormat().format(Calendar.getInstance().getTime());
         boolean syncOk = presenter.checkSyncStatus();
 
@@ -87,6 +99,8 @@ public class SyncDataWorker extends Worker {
         prefs.edit().putBoolean(Constants.LAST_DATA_SYNC_STATUS, isEventOk && isTeiOk && isDataValue && syncOk).apply();
 
         cancelNotification();
+
+        presenter.startPeriodicDataWork(getApplicationContext());
 
         return Result.success(createOutputData(true));
     }
@@ -109,6 +123,7 @@ public class SyncDataWorker extends Worker {
                 new NotificationCompat.Builder(getApplicationContext(), DATA_CHANNEL)
                         .setSmallIcon(R.drawable.ic_sync)
                         .setContentTitle(title)
+                        .setOngoing(true)
                         .setContentText(content)
                         .setAutoCancel(false)
                         .setPriority(NotificationCompat.PRIORITY_DEFAULT);
