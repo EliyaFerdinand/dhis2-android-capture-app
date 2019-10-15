@@ -199,7 +199,7 @@ class EnrollmentFormRepositoryImpl(
                 .map { ruleEnrollmentBuilder.attributeValues(it).build() }
                 .switchMap { ruleEnrollment ->
                     ruleEngine().flatMap { ruleEngine ->
-                        Flowable.fromCallable(ruleEngine.evaluate(ruleEnrollment))
+                        Flowable.fromCallable { ruleEngine.evaluate(ruleEnrollment).call() }
                     }
                             .map {
                                 org.dhis2.utils.Result.success(it)
@@ -230,7 +230,7 @@ class EnrollmentFormRepositoryImpl(
                                 .one()
                                 .blockingGet()
                         val finalValue =
-                                if (variable!=null && variable.useCodeForOptionSet() != true && attr.optionSet() != null) {
+                                if (variable != null && variable.useCodeForOptionSet() != true && attr.optionSet() != null) {
                                     d2.optionModule().options.byOptionSetUid().eq(attr.optionSet()!!.uid())
                                             .byCode().eq(value.value()!!).one().blockingGet().name()!!
                                 } else

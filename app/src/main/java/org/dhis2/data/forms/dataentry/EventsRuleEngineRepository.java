@@ -99,7 +99,7 @@ public final class EventsRuleEngineRepository implements RuleEngineRepository {
         return queryDataValues()
                 .switchMap(this::queryEvent)
                 .switchMap(event -> formRepository.ruleEngine()
-                        .switchMap(ruleEngine -> Flowable.fromCallable(ruleEngine.evaluate(event))
+                        .switchMap(ruleEngine -> Flowable.fromCallable(() -> ruleEngine.evaluate(event).call())
                                 .map(Result::success)
                                 .onErrorReturn(error -> Result.failure(new Exception(error)))
                         )

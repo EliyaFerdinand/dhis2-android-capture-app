@@ -186,7 +186,7 @@ public class ProgramStageSelectionRepositoryImpl implements ProgramStageSelectio
         return ruleEnrollment(enrollmentUid)
                 .flatMap(enrollment ->
                         cachedRuleEngineFlowable
-                                .switchMap(ruleEngine -> Flowable.fromCallable(ruleEngine.evaluate(enrollment))
+                                .switchMap(ruleEngine -> Flowable.fromCallable(() -> ruleEngine.evaluate(enrollment).call())
                                         .map(Result::success)
                                         .onErrorReturn(error -> Result.failure(new Exception(error)))
                                 )

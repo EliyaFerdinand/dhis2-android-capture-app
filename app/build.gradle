@@ -18,6 +18,7 @@ repositories {
     maven {
         url("https://oss.sonatype.org/content/repositories/snapshots")
     }
+    mavenLocal()
     mavenCentral()
 }
 
@@ -211,7 +212,7 @@ sonarqube {
 dependencies {
     debugImplementation project(':core')
     implementation project(':customFab')
-    debugImplementation project(':dhis2-rule-engine')
+    //debugImplementation project(':dhis2-rule-engine')
     implementation project(':viewpagerdotsindicator')
     implementation project(':tableview')
 
@@ -235,6 +236,7 @@ dependencies {
         exclude group: "org.hisp.dhis", module: "core-rules"
     }
 
+    debugImplementation("org.hisp.dhis.rules:rule-engine-jvm:1.0.5.1-SNAPSHOT")
     releaseImplementation "org.hisp.dhis.rules:rule-engine:${libraries.ruleEngine}"
     //endregion
 

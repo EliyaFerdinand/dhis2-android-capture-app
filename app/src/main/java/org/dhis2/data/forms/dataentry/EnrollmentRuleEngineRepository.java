@@ -318,10 +318,10 @@ public final class EnrollmentRuleEngineRepository implements RuleEngineRepositor
                 .switchMap(enrollment -> formRepository.ruleEngine()
                         .switchMap(ruleEngine -> {
                             if (isEmpty(lastUpdatedAttr) && !getIndicators)
-                                return Flowable.fromCallable(ruleEngine.evaluate(enrollment));
+                                return Flowable.fromCallable(() -> ruleEngine.evaluate(enrollment).call());
                             else
                                 return Flowable.just(attributeRules.get(lastUpdatedAttr) != null ? attributeRules.get(lastUpdatedAttr) : trasformToRule(mandatoryRules))
-                                        .flatMap(rules -> Flowable.fromCallable(ruleEngine.evaluate(enrollment, rules)));
+                                        .flatMap(rules -> Flowable.fromCallable(() -> ruleEngine.evaluate(enrollment, rules).call()));
                         })
                         .map(Result::success)
                         .onErrorReturn(error -> Result.failure(new Exception(error)))
