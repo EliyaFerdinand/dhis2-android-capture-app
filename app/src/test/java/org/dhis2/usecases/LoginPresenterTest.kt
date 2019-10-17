@@ -14,11 +14,13 @@ import org.dhis2.usescases.login.LoginContracts
 import org.dhis2.usescases.login.LoginPresenter
 import org.dhis2.usescases.main.MainActivity
 import org.dhis2.data.schedulers.TrampolineSchedulerProvider
+import org.dhis2.usescases.login.LoginPresenter.Companion.AUTH_ERROR
 import org.dhis2.utils.Constants
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.dhis2.utils.analytics.CLICK
 import org.dhis2.utils.analytics.LOGIN
 import org.dhis2.utils.analytics.SERVER_QR_SCANNER
+import org.dhis2.utils.analytics.ACCOUNT_RECOVERY
 import org.junit.Before
 import org.junit.Test
 
@@ -153,9 +155,20 @@ class LoginPresenterTest {
     }
 
     @Test
+    fun `Should display auth error message when trying to log in with fingerprint`(){
+        whenever(goldfinger.authenticate()) doReturn Observable.error(Exception("error"))
+
+        loginPresenter.onFingerprintClick()
+
+        verify(view).displayMessage(AUTH_ERROR)
+        verify(view).hideFingerprintDialog()
+    }
+
+    @Test
     fun `Should open account recovery when user does not remember it`(){
         loginPresenter.onAccountRecovery()
 
+        verify(analyticsHelper).setEvent(ACCOUNT_RECOVERY, CLICK, ACCOUNT_RECOVERY)
         verify(view).openAccountRecovery()
     }
 
